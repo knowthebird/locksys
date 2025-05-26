@@ -1,0 +1,7 @@
+# Ensure all text files use LF line endings
+* text=auto eol=lf
+
+# Explicit for C code
+*.c text eol=lf
+*.h text eol=lf
+*.md text eol=lf

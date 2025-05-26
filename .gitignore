@@ -1,0 +1,7 @@
+# VSCode settings
+.vscode/
+
+build/*
+!build/README.md
+*.exe
+*.o

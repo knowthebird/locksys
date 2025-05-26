@@ -1,0 +1,23 @@
+Checks: >
+  clang-analyzer-*,
+  bugprone-*,
+  cert-*,
+  cppcoreguidelines-*,
+  hicpp-*,
+  misc-*,
+  modernize-*,
+  performance-*,
+  portability-*,
+  readability-*,
+  -clang-analyzer-cplusplus*,
+  -clang-analyzer-optin.cplusplus.VirtualCall
+
+WarningsAsErrors: '*'
+
+CheckOptions:
+  - key:             modernize-use-nullptr.NullMacros
+    value:           'NULL'
+  - key:             cppcoreguidelines-pro-type-vararg.CheckPrintf
+    value:           1
+  - key:             misc-definitions-in-headers.HeaderFileExtensions
+    value:           'h;hpp;hxx'

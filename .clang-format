@@ -1,0 +1,51 @@
+# .clang-format
+Language:        Cpp
+Standard:        Cpp11
+
+BasedOnStyle:    LLVM
+
+# Consistency and clarity
+IndentWidth:     4
+TabWidth:        4
+UseTab:          Never
+BreakBeforeBraces: Allman
+
+# Spacing and alignment
+AlignConsecutiveAssignments: true
+AlignConsecutiveDeclarations: true
+AlignTrailingComments: true
+ColumnLimit:     100
+AllowShortIfStatementsOnASingleLine: false
+AllowShortFunctionsOnASingleLine: None
+AlwaysBreakTemplateDeclarations: Yes
+AlwaysBreakAfterReturnType: TopLevel
+SpaceAfterCStyleCast: true
+SpaceBeforeParens: ControlStatements
+
+# Pointer/reference spacing for clarity
+PointerAlignment: Left
+DerivePointerAlignment: false
+
+# Includes and sorting
+SortIncludes: true
+IncludeBlocks: Preserve
+IncludeCategories:
+  - Regex:           '^<.*\.h>'
+    Priority:        1
+    SortPriority:    0
+  - Regex:           '^".*\.h"'
+    Priority:        2
+    SortPriority:    1
+  - Regex:           '.*'
+    Priority:        3
+
+# Keep trailing commas off for simplicity
+Cpp11BracedListStyle: true
+
+# Encourage explicit formatting of function declarations/definitions
+BreakConstructorInitializers: BeforeColon
+ConstructorInitializerIndentWidth: 4
+
+# Custom tweaks to match security/cert guidelines
+ReflowComments: false
+FixNamespaceComments: true
