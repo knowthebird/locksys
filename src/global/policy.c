@@ -1,4 +1,5 @@
 #include "global/policy.h"
+#include "global/common.h"
 #include "global/config.h"
 #include <ctype.h>
 #include <stdbool.h>

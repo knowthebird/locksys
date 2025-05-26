@@ -27,6 +27,7 @@
 
 #elif defined(PLATFORM_ARDUINO)
 // Default for Arduino builds: TinyCrypt
+#define CRYPTO_BACKEND_TINYCRYPT
 #define USE_TINYCRYPT
 
 #else

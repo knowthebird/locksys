@@ -1,6 +1,7 @@
 #ifndef POLICY_H_
 #define POLICY_H_
 
+#include <stddef.h>
 #include "global/common.h"
 
 // Password policy

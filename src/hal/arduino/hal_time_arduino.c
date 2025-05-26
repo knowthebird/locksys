@@ -2,7 +2,7 @@
 
 #if defined(PLATFORM_ARDUINO)
 
-#include "hal_time.h"
+#include "hal/hal_time.h"
 
 #warning "Unsupported platform for hal_time.c, using dummy functions."
 
