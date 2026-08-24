@@ -1,214 +1,143 @@
-# LockSys – Secure Access Control for Embedded Systems
+# LockSys — Embedded Access-Control Library
 
-**LockSys** is a lightweight, security-focused C library for local PIN/passphrase access control in embedded systems.
+LockSys is an experimental C library for local PIN/passphrase access control on embedded systems. It explores a portable architecture for authenticated user records, password verification, retry/lockout policy, persistent state, and hardware abstraction across MCU and desktop targets.
 
-Built for hardware hackers, embedded devs, and security engineers, LockSys handles secure credential checks, lockout logic, and cryptographic protection of persistent data. Whether you're building a DIY safe or a hardened kiosk, LockSys is meant to drop in and stay out of your way.
+> **Status: developer alpha.** LockSys is not production-ready and has not undergone the testing, review, or certification required for deployment as a security boundary.
 
----
+## Engineering Goals
 
-## 🚧 Project Status: Developer Alpha
+The project is designed around several embedded-systems constraints:
 
-> ⚠️ LockSys is an early-stage security project. Not production-ready.  
-> Some features are placeholders or partially implemented.
-> Use at your own risk. Contributions, feedback, and testing are very welcome.
+- limited local resources and offline operation
+- portable storage/time/input interfaces through a HAL
+- authenticated persistent user records
+- HMAC-based password verification
+- constant-time comparison of authentication values
+- configurable password and retry/lockout policy
+- support for desktop targets during development and MCU targets for integration
 
-## Project Vision
+See [`doc/threat_model.md`](doc/threat_model.md) for the current threat model, trust boundaries, and known limitations.
 
-LockSys aims to become a COTS-ready access control library:
+## Current Capabilities
 
-    Low-resource for embedded systems
+| Capability | Status | Notes |
+| --- | --- | --- |
+| HMAC-based password verification | Implemented | Uses the configured crypto backend and internal device key |
+| Authenticated user records | Implemented | User records include an HMAC checked when records are loaded |
+| Constant-time authentication comparison | Implemented | Used when validating authentication values |
+| Password policy validation | Implemented | Configurable limits and requirements |
+| Retry / lockout policy | Implemented | Persistent user attempt state is supported |
+| Platform HAL | Implemented | Storage/time/platform behavior is separated behind interfaces |
+| Arduino examples | Implemented | Bootstrap and normal-operation example sketches are included |
+| Desktop development targets | Implemented | CMake supports POSIX/Windows development paths |
+| Authenticated audit logs | Planned | Do not treat current logging as tamper-evident |
+| Remote authenticated input / replay protection | Not implemented | Must be supplied by the integration if needed |
+| Secure boot / firmware signing | Out of scope | Platform/integration responsibility |
+| Security certification | None | No FIPS, Common Criteria, or similar certification |
 
-    High-security by default
+## Repository Structure
 
-    Reliable across hardware platforms
+```text
+CMakeLists.txt        Build configuration
+examples/             Desktop and Arduino example applications
+src/                  Core implementation
+src/crypto/           Cryptographic abstraction/backends
+src/global/           User records, policy, configuration, and system logic
+src/hal/              Platform-specific storage/time/I/O abstraction
+src/logging/          Logging-related interfaces/work in progress
+tests/                Early test harness
+tools/                Bootstrap/key-generation utilities
+doc/                  Security and design documentation
+```
 
-    Free and open source for real-world use, inspection, and verification
+## Desktop Build
 
-I’d love support from the community to help make LockSys a trustworthy foundation for physical access systems—whether for DIY safes or production kiosks.
+### Requirements
 
----
-
-## Features
-- Secure **device-unique HMAC-based PIN storage** (constant-time comparison)
-- **Explicit memory zeroization** of secrets
-- **Lockout and disable logic** with persistent attempt tracking
-- **Portable HAL** (hardware abstraction layer) for platform support
-- Compatible with **EEPROM/Flash** for offline systems
-- Builds cleanly on **MCUs, Linux, Windows, Arduino**, etc.
-
----
-
-## Target Use Cases
-- Physical access control for safes, lockers, and kiosks
-- Embedded systems, Microcontroller-based, with limited resources and high security demands
-- IoT enclosures without cloud dependencies
-- Projects needing cryptographic protection without full disk encryption
-
----
-
-## Build Instructions
-
-This project supports both **desktop platforms** (Windows, Linux, macOS) and **Arduino microcontrollers**.
-
-### Desktop Build (CMake)
-
-#### Requirements
 - CMake 3.16+
-- A C compiler:
-  - Windows: MinGW or Visual Studio
-  - Linux/macOS: GCC or Clang
+- GCC/Clang on POSIX platforms or MinGW/Visual Studio on Windows
 
-Optional:
-- `clang-format` for formatting
-- `clang-tidy` for linting
+### POSIX / Linux / macOS
 
-#### POSIX / Linux / macOS
 ```bash
 mkdir build
-```
-```bash
 cd build
-```
-```bash
 cmake -DCRYPTO_BACKEND_TINYCRYPT=ON ..
-```
-```bash
 cmake --build . --target bootstrap_posix
-```
-```bash
 ./bin/bootstrap
-```
-```bash
 cmake --build . --target main_posix
-```
-```bash
 ./bin/main
 ```
 
-#### Windows (MinGW)
+### Windows with MinGW
+
 ```cmd
 mkdir build
-```
-```cmd
 cd build
-```
-```cmd
 cmake -G "MinGW Makefiles" -DCRYPTO_BACKEND_TINYCRYPT=ON ..
-```
-```cmd
 cmake --build . --target bootstrap_win
-```
-```cmd
 bin\bootstrap.exe
-```
-```cmd
 cmake --build . --target main_win
-```
-```cmd
 bin\main.exe
 ```
 
-#### What These Steps Do
-1. **Build the bootstrap application** – initializes logs, storage, and user database.
-2. **Run the bootstrap app** – sets up the initial root admin account.
-3. **Build the main application** – the normal operational interface.
-4. **The bootstrap app is no longer required** – but can reset the system if storage is retained.
+The bootstrap application initializes persistent state and the first administrative user. The normal application uses the same device key and persistent storage format.
 
-#### Bootstrap and Device Key Binding
-- The bootstrap and main applications share a **generated device key** stored in `device_key.generated.h`.
-- If this key changes, existing storage becomes unusable.
-- To recreate a valid root account, the bootstrap app must match the device key used by the main application.
+## Arduino Workflow
 
----
+The Arduino examples can be used without CMake:
 
-### Arduino IDE
+1. Upload `examples/arduino/BootstrapSystem/BootstrapSystem.ino`.
+2. Initialize storage and the root administrative account.
+3. Upload `examples/arduino/OpenLock/OpenLock.ino`.
+4. Continue normal operation using the same device key and configuration.
 
-You can use the **Arduino IDE directly** — no CMake needed.
+## Development Device Key
 
-> A default `device_key.generated.h` is included for convenience. Users who are only working within the Arduino IDE (without a CLI or build tools) must manually edit this file to customize the device key for each unit.
->
-> ⚠️ After making changes to the library (including `device_key.generated.h`), you must **restart the Arduino IDE** to ensure changes are applied correctly.
+The repository intentionally includes `src/global/device_key.generated.h` with a predictable example key so the project and Arduino examples can build without a separate provisioning step. The header emits a compiler warning stating that the key is unsafe for production.
 
-#### Arduino Workflow
-1. Upload:
-    ```
-    examples/arduino/BootstrapSystem/BootstrapSystem.ino
-    ```
-2. Run the sketch to initialize device storage and root admin account.
-3. Then upload:
-    ```
-    examples/arduino/OpenLock/OpenLock.ino
-    ```
-4. The system is now ready for normal use. The bootstrap firmware is no longer needed.
+That checked-in value is **not a real secret**. It is a development fixture.
 
-> The two Arduino programs must use the **same device key**. Customize configuration in:
-```
-src/global/config.h
-```
+For any real deployment:
 
----
+- generate a unique random key per device
+- keep the real key out of source control
+- provision/store it using protection appropriate to the target platform
+- do not reuse the repository's development key
 
-## Project Structure
-```
-build/            → CMake output (binaries, storage, device key)
-doc/              → Design notes and threat model
-examples/         → Example applications (main.c, Arduino sketches)
-src/              → Core implementation
-src/crypto/       → Crypto interface
-src/extern/       → Embedded libraries (mbedTLS, TinyCrypt)
-src/global/       → Core config, user, and device key logic
-src/hal/          → Platform-specific I/O (windows, posix, arduino)
-src/logging/      → Logging interfaces (planned)
-tests/            → Unit tests and mocks
-tools/            → Bootstrap and key generation utilities
-```
+The generated key and local build output should not be committed when using real provisioning data.
 
----
+## Security Boundaries
 
-## Security Best Practices
-- Regenerate the device key for each deployed device
-- Never reuse the same device key across production units
-- Do not commit `device_key.generated.h` or generated secrets to version control
-- Securely erase provisioning files once the system is deployed:
-```
-src/global/device_key.generated.h
-build/*
-```
+LockSys does not solve every layer of physical access control. Important assumptions include:
 
----
+- Direct PCB or actuator access may bypass application logic.
+- Firmware extraction or modification can defeat software controls unless the platform provides additional protections.
+- Remote-input authentication and replay resistance are integration concerns and are not currently provided by the core library.
+- Secure audit logging is planned, not complete.
+- The current automated test suite is early and does not yet justify a production-security claim.
 
-## Capability Matrix
+The detailed rationale is in [`doc/threat_model.md`](doc/threat_model.md).
 
-| Capability                          | Supported | Notes                                      |
-|-------------------------------------|-----------|--------------------------------------------|
-| Constant-time HMAC PIN validation   | ✅         | SHA256 HMAC                                |
-| Memory zeroization of secrets       | ✅         | Manual volatile overwrite                  |
-| Lockout logic + retry throttling    | ✅         | Configurable thresholds                    |
-| Platform HAL abstraction            | ✅         | Arduino, POSIX, Windows                    |
-| Persistent lock state               | ✅         | EEPROM/Flash supported                     |
-| Secure audit logs                   | ⚠️         | HMAC log storage planned                   |
-| Arduino IDE support                 | ✅         | `BootstrapSystem.ino`, `OpenLock.ino`      |
-| Networked auth / SSO / OAuth        | ❌         | Not supported, by design                   |
-| Secure messaging / file crypto      | ❌         | Out of scope                               |
-| HIPAA / FIPS 140-2 / compliance     | ❌         | No certs. Use at your own risk             |
+## Testing and Static Analysis
 
----
+The repository includes an early test harness plus `clang-format` and `clang-tidy` configuration. Expanding automated tests around authentication, record integrity, lockout behavior, malformed storage, and failure paths is an important next step before stronger security claims are appropriate.
+
+## Intended Use
+
+LockSys is most useful as:
+
+- an embedded-security architecture experiment
+- a portable HAL/design example for local access control
+- a basis for testing authentication and persistence approaches on MCU and desktop targets
+- a project for review, extension, and security analysis
+
+It should not currently be used as an unreviewed production access-control component.
 
 ## Contributing
 
-We welcome:
-- Feedback or security concerns (open an issue)
-- Platform ports (new HALs)
-- Example integrations or test cases
-
-See [`CONTRIBUTING.md`](CONTRIBUTING.md) for details.
-
----
+Feedback, tests, platform ports, and security review are welcome. See [`CONTRIBUTING.md`](CONTRIBUTING.md).
 
 ## License
 
-MIT – Free for personal and commercial use.
-
----
-
-_Developed by Ross Kinard – 2025_
+MIT. See [`LICENSE.md`](LICENSE.md).
